@@ -11,7 +11,7 @@ function rowToMessage(row) {
   };
 }
 
-// GET /api/messages?limit=100
+// GET /api/chat_messages?limit=100
 export async function getMessages(req, res) {
   try {
     const { data, error } = await supabase
@@ -24,20 +24,20 @@ export async function getMessages(req, res) {
     }
 
     // IMPORTANT:
-    // Frontend expects { messages: [...] }
+    // Frontend expects { chat_messages: [...] }
     return res.json({
-      messages: data.map(rowToMessage),
+      chat_messages: data.map(rowToMessage),
     });
   } catch (error) {
-    console.error('Failed to fetch messages:', error);
+    console.error('Failed to fetch chat_messages:', error);
 
     return res.status(500).json({
-      error: 'Failed to fetch messages',
+      error: 'Failed to fetch chat_messages',
     });
   }
 }
 
-// POST /api/messages
+// POST /api/chat_messages
 export async function postMessage(req, res) {
   const { userId, username, text } = req.body ?? {};
 
@@ -69,7 +69,7 @@ export async function postMessage(req, res) {
       message: rowToMessage(data),
     });
   } catch (err) {
-    console.error('[messages] insert failed:', err);
+    console.error('[chat_messages] insert failed:', err);
 
     return res.status(500).json({
       error: 'Failed to send message',
@@ -82,7 +82,7 @@ export async function createMessage(userId, username, text) {
   const id = randomUUID();
 
   const { data, error } = await supabase
-    .from('chat_messages')
+    .from('chat_chat_messages')
     .insert({
       id,
       user_id: userId,
