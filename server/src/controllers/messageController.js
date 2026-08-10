@@ -82,7 +82,7 @@ export async function createMessage(userId, username, text) {
   const id = randomUUID();
 
   const { data, error } = await supabase
-    .from('chat_chat_messages')
+    .from('chat_messages')
     .insert({
       id,
       user_id: userId,
