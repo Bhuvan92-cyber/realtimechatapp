@@ -6,7 +6,9 @@ const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??
   "https://realtimechatapp-e08b.onrender.com";
 
+console.log("EXPO_PUBLIC_API_BASE =", process.env.EXPO_PUBLIC_API_BASE);
 console.log("API_BASE =", API_BASE);
+
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
