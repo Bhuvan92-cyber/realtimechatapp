@@ -1,261 +1,309 @@
-# Pulse Chat — Real-Time Chat Application
+# Pulse Chat
 
-A real-time chat application built with **React Native (Expo)** on the frontend and **Node.js + Express + Socket.io** on the backend, with SQLite for message persistence.
+Pulse Chat is a real-time, single-room chat application built with Expo, React Native, TypeScript, Node.js, Express, Socket.IO, and Supabase PostgreSQL.
 
-Users can send and receive messages instantly, view chat history after refreshing, see timestamps, know who's online, and see when someone is typing.
+The application provides username-based demo access, real-time messaging, message history, typing indicators, presence updates, and session persistence. It is intended as a portfolio/demo application and is not yet a production-grade authenticated messaging platform.
 
----
+## Live environments
 
-## Features
+- Frontend: [realtimechatapp-alpha-ten.vercel.app](https://realtimechatapp-alpha-ten.vercel.app/)
+- Backend: [realtimechatapp-e08b.onrender.com](https://realtimechatapp-e08b.onrender.com/)
+- Source repository: [github.com/Bhuvan92-cyber/realtimechatapp](https://github.com/Bhuvan92-cyber/realtimechatapp)
 
-### Core (required)
-- **Send & receive messages** instantly via Socket.io (no page refresh)
-- **Real-time broadcast** — new messages appear for all connected users immediately
-- **Message persistence** — chat history is stored in SQLite and loaded on app refresh
-- **Timestamps** — every message shows its send time
-- **REST APIs** — `POST /api/messages`, `GET /api/messages` alongside the realtime layer
-- **Graceful connection handling** — auto-reconnect, connection status badge, error banners
+The backend currently requires the Supabase schema migration to be applied before login and message persistence can work. See [Local development](#local-development).
 
-### Bonus (implemented)
-- **Username-based login** (dummy authentication — no password)
-- **Typing indicator** — see when another user is typing
-- **Online/offline user status** — live online count + user list
-- **Message persistence** — SQLite database (via Node's built-in `node:sqlite`)
-- **Session persistence** — username is remembered across refreshes (AsyncStorage)
+## Product capabilities
 
----
+- Username-based demo login with deterministic avatar colors
+- Real-time message delivery through Socket.IO
+- Persisted message history in Supabase PostgreSQL
+- Online user count and online-user list
+- Typing indicators
+- Connection status and reconnect handling
+- Local session persistence through AsyncStorage
+- Responsive Expo web interface with React Native components
+- REST endpoints for health, login, users, and messages
 
-## Tech Stack
+## Technology stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React Native (Expo SDK 54), Expo Router, TypeScript |
-| Real-time | Socket.io (client + server) |
-| Backend | Node.js, Express |
-| Database | SQLite (Node built-in `node:sqlite`) |
-| Fonts | Inter (`@expo-google-fonts/inter`) |
-| Icons | Lucide (`lucide-react-native`) |
+| Area               | Technology                                         |
+| ------------------ | -------------------------------------------------- |
+| Client             | React Native, Expo SDK 54, Expo Router, TypeScript |
+| UI                 | Inter font, Lucide icons, centralized theme tokens |
+| Realtime transport | Socket.IO client/server                            |
+| API                | Node.js 22, Express                                |
+| Database           | Supabase PostgreSQL                                |
+| Web hosting        | Vercel static deployment                           |
+| API hosting        | Render web service                                 |
 
----
+## Repository layout
 
-## Project Structure
-
-```
-.
-├── app/                        # Expo Router routes
-│   ├── _layout.tsx             # Root layout (Stack)
-│   ├── +not-found.tsx          # 404 screen
-│   └── (tabs)/
-│       ├── _layout.tsx         # Tab bar layout
-│       └── index.tsx           # Main screen (login ↔ chat orchestrator)
-├── components/
-│   ├── Avatar.tsx              # Initials avatar bubble
-│   ├── ChatScreen.tsx          # Main chat UI (message list + composer)
-│   ├── ConnectionBadge.tsx     # Online/connecting/disconnected indicator
-│   ├── MessageBubble.tsx       # Individual message with timestamp
-│   └── TypingIndicator.tsx     # Animated "user is typing…" indicator
-├── screens/
-│   └── LoginScreen.tsx         # Username login screen
-├── hooks/
-│   ├── useChat.ts              # Socket.io + message state management
-│   ├── useTyping.ts            # Typing event emitter (debounced)
-│   └── useFrameworkReady.ts    # Expo framework init (required)
-├── lib/
-│   ├── api.ts                  # REST client (login, fetchMessages, listUsers)
-│   ├── socket.ts               # Socket.io client singleton
-│   ├── theme.ts                # Centralized color/font/spacing tokens
-│   └── format.ts               # Time + initials helpers
-├── types/
-│   ├── chat.ts                 # Shared Message / User / status types
-│   └── env.d.ts                # Environment variable type declarations
-├── server/                     # Node.js + Express + Socket.io backend
-│   ├── src/
-│   │   ├── config/env.js       # Environment config
-│   │   ├── controllers/
-│   │   │   ├── messageController.js
-│   │   │   └── userController.js
-│   │   ├── lib/db.js           # SQLite connection + schema init
-│   │   ├── routes/index.js     # Express route definitions
-│   │   ├── socket/socketHandler.js  # Socket.io event handlers
-│   │   └── index.js            # HTTP + Socket.io server entry
-│   ├── data/                   # SQLite database file (auto-created)
-│   ├── .env.example
-│   └── package.json
-├── .env                        # Frontend environment variables
-├── app.json                    # Expo config
-└── package.json                # Frontend dependencies
+```text
+app/                 Expo Router routes and application entry points
+components/          Chat UI, messages, avatars, indicators, and status badges
+screens/             Login screen
+hooks/               Chat, typing, and Expo lifecycle hooks
+lib/                 API client, Socket.IO client, formatting, and theme
+types/               Shared TypeScript domain types
+server/src/          Express and Socket.IO backend
+server/src/config/   Runtime and Supabase configuration
+server/src/controllers/  User and message operations
+server/src/socket/   Realtime event handlers
+supabase/migrations/ Database schema and row-level security policies
+assets/              Application icons and web favicon
 ```
 
----
+## Prerequisites
 
-## Setup Instructions
+- Node.js 22.x
+- npm
+- A Supabase project
+- An Expo account for EAS Hosting, if deploying the frontend through EAS
+- A Render account, if deploying the backend through Render
 
-### Prerequisites
-- **Node.js v22+** (required for the built-in `node:sqlite` module used by the backend)
-- **npm** (comes with Node)
-- A modern browser (for the web build) or the Expo Go app (for mobile)
+Node 22 is required by the backend runtime configuration. Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`.
 
-### 1. Backend Setup
+## Local development
 
-```bash
+### 1. Configure Supabase
+
+Create a Supabase project and run the SQL in:
+
+```text
+supabase/migrations/20260721085927_create_chat_tables.sql.sql
+```
+
+The migration creates the following public tables:
+
+- `chat_users`
+- `chat_messages`
+
+Confirm the tables exist in the same Supabase project referenced by `SUPABASE_URL`.
+
+### 2. Start the backend
+
+```powershell
 cd server
-
-# Install dependencies
-npm install
-
-# Configure environment
-cp .env.example .env
-# Edit .env — see "Environment Variables" below
-
-# Start the server
-npm start          # production
-# or
-npm run dev        # development with auto-reload
+npm.cmd ci
 ```
 
-The server starts on **http://localhost:3001** by default.
+Create `server/.env`:
 
-Verify it's running:
-```bash
-curl http://localhost:3001/api/health
-# → {"status":"ok"}
+```env
+PORT=3001
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVER_ONLY_SERVICE_ROLE_KEY
+CLIENT_ORIGINS=http://localhost:8081,http://localhost:3000
 ```
 
-### 2. Frontend Setup
+Start the service:
 
-From the project root (not the `server/` folder):
-
-```bash
-# Install dependencies
-npm install
-
-# Start the Expo dev server (web)
-npm run dev
+```powershell
+npm.cmd start
 ```
 
-This opens the app in your browser. The default web dev server runs on port 8081 (or 9091 depending on the environment).
+Verify the backend:
 
-**To build a production web bundle:**
-```bash
-npm run build:web
-# Output is in ./dist
+```text
+http://localhost:3001/api/health
 ```
 
-### 3. Connecting Frontend to Backend
+Expected response:
 
-The frontend connects to the backend URL defined in the `EXPO_PUBLIC_API_BASE` environment variable (in the root `.env` file). By default this is `http://localhost:3001`.
+```json
+{"status":"ok"}
+```
 
-- **Web (same machine):** `http://localhost:3001` works as-is.
-- **Mobile / physical device:** Replace with your machine's LAN IP, e.g. `http://192.168.1.50:3001`, and ensure both devices are on the same network.
+### 3. Start the Expo frontend
 
----
+From the repository root:
 
-## Environment Variables
+```powershell
+npm.cmd ci
+```
 
-### Frontend (root `.env`)
+Create or update the root `.env`:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `EXPO_PUBLIC_API_BASE` | Backend server URL | `http://localhost:3001` |
-| `EXPO_PUBLIC_SUPABASE_URL` | (Pre-provisioned, unused by this app) | — |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | (Pre-provisioned, unused by this app) | — |
+```env
+EXPO_PUBLIC_API_BASE=http://localhost:3001
+```
 
-### Backend (`server/.env`)
+Start Expo:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PORT` | Port the backend listens on | `3001` |
-| `CLIENT_ORIGINS` | Comma-separated allowed CORS origins | `http://localhost:8081,http://localhost:19006` |
+```powershell
+npm.cmd run dev
+```
 
----
+For the web target:
 
-## REST API Reference
+```powershell
+npm.cmd run dev -- --web
+```
 
-Base URL: `http://localhost:3001`
+For a physical device, replace `localhost` with the backend machine's LAN IP and allow the corresponding frontend origin in `CLIENT_ORIGINS`.
 
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| `GET` | `/api/health` | Health check | — |
-| `GET` | `/api/messages?limit=100` | Fetch chat history (oldest→newest) | — |
-| `POST` | `/api/messages` | Send a message (REST) | `{ userId, username, text }` |
-| `POST` | `/api/users/login` | Dummy login (upsert by username) | `{ username }` |
-| `GET` | `/api/users` | List all users with online status | — |
+## Environment variables
 
----
+### Frontend
 
-## Socket.io Events
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `EXPO_PUBLIC_API_BASE` | Yes | Public URL of the deployed backend |
 
-### Client → Server
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `user:join` | `{ userId, username }` | Identify on connect (ack returns online count) |
-| `message:send` | `{ text }` | Send a message (persisted + broadcast) |
-| `typing:start` | — | Notify others the user is typing |
-| `typing:stop` | — | Notify others the user stopped typing |
+`EXPO_PUBLIC_*` values are embedded into the web bundle at build time. Never place Supabase service-role credentials in the frontend or in Vercel's public runtime configuration.
 
-### Server → Client
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `message:new` | `Message` | A new message was sent by any user |
-| `presence` | `{ online: number }` | Online socket count changed |
-| `users:online` | `{ users: string[] }` | List of online usernames |
+### Backend
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `PORT` | Render-provided | HTTP and Socket.IO listening port |
+| `SUPABASE_URL` | Yes | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only Supabase credential |
+| `CLIENT_ORIGINS` | Yes in production | Comma-separated allowed browser origins |
+
+For the current Vercel deployment, `CLIENT_ORIGINS` must include:
+
+```text
+https://realtimechatapp-alpha-ten.vercel.app
+```
+
+## HTTP API
+
+Base URL: `http://localhost:3001` locally or the Render service URL in production.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Service health check |
+| `POST` | `/api/users/login` | Create or retrieve a username-based demo user |
+| `GET` | `/api/users` | List users and presence state |
+| `GET` | `/api/messages?limit=100` | Read message history |
+| `POST` | `/api/messages` | Persist a message through REST |
+
+Login request example:
+
+```json
+{
+  "username": "alice"
+}
+```
+
+## Socket.IO events
+
+### Client to server
+
+| Event | Payload | Purpose |
+| --- | --- | --- |
+| `user:join` | `{ userId, username }` | Register the connected user |
+| `message:send` | `{ text }` | Persist and broadcast a message |
+| `typing:start` | none | Notify other users that typing started |
+| `typing:stop` | none | Notify other users that typing stopped |
+
+### Server to client
+
+| Event | Payload | Purpose |
+| --- | --- | --- |
+| `message:new` | `Message` | New persisted message |
+| `presence` | `{ online }` | Connected socket count |
+| `users:online` | `{ users }` | Current online usernames |
 | `typing:start` | `{ username }` | Another user started typing |
 | `typing:stop` | `{ username }` | Another user stopped typing |
 
----
+## Deployment
 
-## Design Decisions
+### Backend on Render
 
-1. **SQLite over MongoDB** — The backend uses Node.js's built-in `node:sqlite` module (zero external DB dependencies, no separate server process). This keeps setup to a single `npm install && npm start`. The schema (users + messages tables) is simple enough that a relational DB is a natural fit. A Supabase/Postgres migration is also included as an alternative.
+Create a Render Web Service connected to the repository with:
 
-2. **Socket.io for all realtime** — Messages are sent over Socket.io (not REST) for instant delivery. The REST `POST /api/messages` endpoint exists per the spec for non-realtime clients, but the live app uses the socket path. Messages are persisted server-side *before* being broadcast, guaranteeing durability.
+| Render setting | Value |
+| --- | --- |
+| Root Directory | `server` |
+| Build Command | `npm ci` |
+| Start Command | `npm start` |
+| Node.js | `22.x` |
+| Health Check Path | `/api/health` |
 
-3. **Dummy username auth** — Login is username-only with no password (per the bonus). The server upserts a user row by username and assigns a deterministic avatar color. This keeps the demo frictionless while still giving each user an identity.
+Add the backend environment variables listed above. Render automatically provides the service `PORT`; the application reads it from the environment.
 
-4. **Session persistence via AsyncStorage** — The logged-in user is cached in AsyncStorage so a page refresh doesn't kick you back to the login screen. This works on both web and native.
+Render supports Socket.IO/WebSocket connections on web services. The current backend uses one process and in-memory presence state. If the service is scaled horizontally, a shared Socket.IO adapter and shared presence store will be required.
 
-5. **Centralized theme** — All colors, fonts, spacing, and radii live in `lib/theme.ts`. This ensures visual consistency and makes restyling a one-file change.
+### Frontend on Vercel
 
-6. **Clean separation of concerns** — The `useChat` hook owns all socket + message state; components are purely presentational. The socket client is a singleton (`lib/socket.ts`) so there's exactly one connection per app instance.
+The Expo web output is configured as static in `app.json`:
 
-7. **Error handling at every boundary** — REST calls check response status and surface errors in a visible banner. Socket events use acknowledgement callbacks to confirm success/failure. Connection errors auto-retry with a visible "Connection error" badge.
-
----
-
-## Assumptions
-
-1. **Single chat room** — All users join one global room (no private/group channels). The spec describes a single chat application, so multi-room routing is out of scope.
-2. **No real authentication** — Per the bonus, login is username-based with no password. Usernames are unique (enforced by the DB) but not secured.
-3. **Node.js v22+** — The backend requires Node 22+ for the built-in `node:sqlite` module (experimental but stable enough for this use case).
-4. **Web-first testing** — The app builds for web and mobile, but the primary testing target is the web build (Expo web). An APK can be generated via EAS Build (`eas build -p android`) but requires an Expo account and native build infrastructure.
-5. **Messages are plaintext** — No markdown, image uploads, or rich media. Text only, max 1000 characters.
-6. **No message pagination** — History loads the most recent 100 messages. Infinite scroll pagination is feasible but out of scope for the 24-hour window.
-7. **Same-network for mobile** — If running the frontend on a physical device, the device and the backend must be on the same network, and `EXPO_PUBLIC_API_BASE` must point to the host machine's LAN IP.
-
----
-
-## Running the App
-
-1. Start the backend: `cd server && npm install && npm start`
-2. Start the frontend: `npm run dev` (from the project root)
-3. Open the app in your browser, enter a username, and start chatting.
-4. Open a second browser tab/window with a different username to see real-time delivery, typing indicators, and presence in action.
-
----
-
-## Generating an APK (React Native)
-
-This project uses Expo's managed workflow. To generate an APK:
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Log in to your Expo account
-eas login
-
-# Build the APK
-eas build -p android --profile preview
+```json
+{
+  "expo": {
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    }
+  }
+}
 ```
 
-Alternatively, use `expo prebuild` to generate native projects and build with Android Studio. Note that the `node:sqlite` backend must be deployed separately (e.g. on Render or Railway) for the mobile app to connect — update `EXPO_PUBLIC_API_BASE` to the deployed URL before building.
+Configure the project with:
+
+| Vercel setting | Value |
+| --- | --- |
+| Framework | Other / Expo static output |
+| Build Command | `npm run build:web` |
+| Output Directory | `dist` |
+| Environment Variable | `EXPO_PUBLIC_API_BASE=https://YOUR_RENDER_SERVICE.onrender.com` |
+
+Deploy using the Vercel dashboard or CLI. Rebuild after changing `EXPO_PUBLIC_API_BASE`.
+
+### Frontend on EAS Hosting
+
+Alternatively:
+
+```powershell
+npx eas-cli@latest login
+npx eas-cli@latest init
+npx eas-cli@latest deploy --prod
+```
+
+## Validation commands
+
+From the repository root:
+
+```powershell
+npm.cmd run typecheck
+npm.cmd run build:web
+```
+
+From `server/`:
+
+```powershell
+npm.cmd ci
+npm.cmd start
+```
+
+The backend should respond with `{"status":"ok"}` at `/api/health` before testing the frontend.
+
+## Current integration notes
+
+The repository and hosted services are actively being aligned with the Supabase schema. Before treating the public deployment as production-ready, verify the following:
+
+- The `chat_users` and `chat_messages` tables have been applied to the Supabase project used by Render.
+- Backend and frontend response envelopes use the same field names (`messages` and `users`).
+- Socket.IO message persistence uses `chat_messages` consistently.
+- Render `CLIENT_ORIGINS` includes the exact Vercel production origin.
+- Server-only Supabase credentials are stored only in Render.
+
+## Security and operational scope
+
+This project uses username-only demo identity and has no password authentication, account verification, authorization model, rate limiting, moderation, or message encryption. Do not use it for confidential or regulated communications without adding those controls.
+
+The Supabase service-role key bypasses row-level security and must remain server-side. Rotate it immediately if it is exposed or committed.
+
+## Contributing
+
+1. Create a feature branch from `main`.
+2. Make a focused change.
+3. Run the typecheck and web build.
+4. Review the diff and update documentation when behavior or deployment changes.
+5. Open a pull request with a concise description and validation notes.
+
+## License
+
+No license file is currently included. Until one is added, the repository should be treated as all-rights-reserved by default.
