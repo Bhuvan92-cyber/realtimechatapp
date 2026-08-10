@@ -12,29 +12,32 @@ function rowToMessage(row) {
 }
 
 // GET /api/messages?limit=100
-// Fetches chat history (most recent `limit` messages, oldest-first).
 export async function getMessages(req, res) {
-    try {
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true });
 
-        if (error) {
-            throw error;
-        }
-
-        res.json(data);
-    } catch (error) {
-        console.error('Failed to fetch messages:', error);
-        res.status(500).json({
-            error: 'Failed to fetch messages'
-        });
+    if (error) {
+      throw error;
     }
+
+    // IMPORTANT:
+    // Frontend expects { messages: [...] }
+    return res.json({
+      messages: data.map(rowToMessage),
+    });
+  } catch (error) {
+    console.error('Failed to fetch messages:', error);
+
+    return res.status(500).json({
+      error: 'Failed to fetch messages',
+    });
+  }
 }
 
 // POST /api/messages
-// Body: { userId, username, text }
 export async function postMessage(req, res) {
   const { userId, username, text } = req.body ?? {};
 
@@ -47,8 +50,8 @@ export async function postMessage(req, res) {
   try {
     const id = randomUUID();
 
-    const { data, error } = await db
-      .from('messages')
+    const { data, error } = await supabase
+      .from('chat_messages')
       .insert({
         id,
         user_id: userId,
@@ -66,23 +69,25 @@ export async function postMessage(req, res) {
       message: rowToMessage(data),
     });
   } catch (err) {
-    console.error('[messages] insert failed:', err.message);
+    console.error('[messages] insert failed:', err);
+
     return res.status(500).json({
       error: 'Failed to send message',
     });
   }
 }
 
+// Used by Socket.IO
 export async function createMessage(userId, username, text) {
   const id = randomUUID();
 
-  const { data, error } = await db
-    .from('messages')
+  const { data, error } = await supabase
+    .from('chat_messages')
     .insert({
       id,
       user_id: userId,
       username,
-      text,
+      text: text.trim(),
     })
     .select()
     .single();

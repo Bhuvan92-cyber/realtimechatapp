@@ -49,7 +49,7 @@ export async function login(req, res) {
 
   try {
     const { data: existing, error: findError } = await db
-      .from('users')
+      .from('chat_users')
       .select('*')
       .eq('username', username)
       .maybeSingle();
@@ -68,7 +68,7 @@ export async function login(req, res) {
     const color = pickColor(username);
 
     const { data: created, error: insertError } = await db
-      .from('users')
+      .from('chat_users')
       .insert({
         id,
         username,
@@ -100,7 +100,7 @@ export async function login(req, res) {
 export async function listUsers(_req, res) {
   try {
     const { data, error } = await db
-      .from('users')
+      .from('chat_users')
       .select('*')
       .order('username', { ascending: true });
 
@@ -126,7 +126,7 @@ export async function listUsers(_req, res) {
 export async function setUserOnline(userId, online) {
   try {
     const { error } = await db
-      .from('users')
+      .from('chat_users')
       .update({
         is_online: online,
         last_seen: new Date().toISOString(),
@@ -147,7 +147,7 @@ export async function setUserOnline(userId, online) {
 export async function listOnlineUsernames() {
   try {
     const { data, error } = await db
-      .from('users')
+      .from('chat_users')
       .select('username')
       .eq('is_online', true)
       .order('username', { ascending: true });
