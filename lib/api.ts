@@ -2,8 +2,11 @@ import type { User, Message } from '@/types/chat';
 
 // The backend runs on port 3001. On web, requests go to the same host.
 // On native, replace with your machine's LAN IP, e.g. http://192.168.1.5:3001
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'https://realtimechatapp-e08b.onrender.com';
+const API_BASE =
+  process.env.EXPO_PUBLIC_API_BASE ??
+  "https://realtimechatapp-e08b.onrender.com";
 
+console.log("API_BASE =", API_BASE);
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;

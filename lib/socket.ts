@@ -7,7 +7,7 @@ export function getSocket(): Socket {
   if (socket) return socket;
 
   socket = io(api.base, {
-    transports: ['websocket'],
+    /*transports: ['websocket'],*/
     autoConnect: false,
     reconnection: true,
     reconnectionDelay: 1000,
@@ -24,3 +24,9 @@ export function disposeSocket() {
     socket = null;
   }
 }
+
+console.log("Socket connecting to:", api.base);
+
+socket = io(api.base, {
+  autoConnect: false,
+});
