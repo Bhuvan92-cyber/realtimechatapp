@@ -306,4 +306,4 @@ The Supabase service-role key bypasses row-level security and must remain server
 
 ## License
 
-No license file is currently included. Until one is added, the repository should be treated as all-rights-reserved by default.
+This project is licensed under the MIT License.
