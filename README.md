@@ -231,7 +231,6 @@ Run these commands after installing dependencies.
 
 ~~~bash
 npm run typecheck
-npm run lint
 npm run build:web
 ~~~
 
