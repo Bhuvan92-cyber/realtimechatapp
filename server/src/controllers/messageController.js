@@ -22,7 +22,7 @@ export async function getMessages(req, res) {
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -30,7 +30,7 @@ export async function getMessages(req, res) {
     }
 
     return res.json({
-      messages: (data ?? []).map(rowToMessage),
+      messages: (data ?? []).map(rowToMessage).reverse(),
     });
   } catch (error) {
     console.error('Failed to fetch chat_messages:', error);
