@@ -6,6 +6,7 @@ let socket: Socket | null = null;
 export function getSocket(): Socket {
   if (socket) return socket;
 
+  console.info('Connecting to chat server:', api.base);
   socket = io(api.base, {
     /*transports: ['websocket'],*/
     autoConnect: false,
@@ -24,9 +25,3 @@ export function disposeSocket() {
     socket = null;
   }
 }
-
-console.log("Socket connecting to:", api.base);
-
-socket = io(api.base, {
-  autoConnect: false,
-});
