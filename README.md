@@ -1,309 +1,310 @@
 # Pulse Chat
 
-Pulse Chat is a real-time, single-room chat application built with Expo, React Native, TypeScript, Node.js, Express, Socket.IO, and Supabase PostgreSQL.
+A single-room, real-time chat application built with Expo, React Native, TypeScript, Node.js, Express, Socket.IO, and Supabase PostgreSQL.
 
-The application provides username-based demo access, real-time messaging, message history, typing indicators, presence updates, and session persistence. It is intended as a portfolio/demo application and is not yet a production-grade authenticated messaging platform.
+Pulse Chat demonstrates a mobile-first client, a REST API, bidirectional realtime events, persisted message history, presence, and typing indicators. It uses username-only demo identity and is **not** a production-secure messaging service.
 
-## Live environments
+## Live demo
 
-- Frontend: [realtimechatapp-alpha-ten.vercel.app](https://realtimechatapp-alpha-ten.vercel.app/)
-- Backend: [realtimechatapp-e08b.onrender.com](https://realtimechatapp-e08b.onrender.com/)
-- Source repository: [github.com/Bhuvan92-cyber/realtimechatapp](https://github.com/Bhuvan92-cyber/realtimechatapp)
+- **Web client:** [realtimechatapp-alpha-ten.vercel.app](https://realtimechatapp-alpha-ten.vercel.app/)
+- **Backend service:** [realtimechatapp-e08b.onrender.com](https://realtimechatapp-e08b.onrender.com/)
+- **Backend health endpoint:** [GET /api/health](https://realtimechatapp-e08b.onrender.com/api/health)
 
-The backend currently requires the Supabase schema migration to be applied before login and message persistence can work. See [Local development](#local-development).
+The hosted client depends on the backend and the Supabase project configured for that backend. When the API or database is unavailable, sign-in, message history, and message persistence may not work. The health endpoint verifies the Express process, not database readiness.
 
-## Product capabilities
+## Features
 
-- Username-based demo login with deterministic avatar colors
-- Real-time message delivery through Socket.IO
-- Persisted message history in Supabase PostgreSQL
-- Online user count and online-user list
+- Username-based demo sign-in (2–24 characters)
+- Shared single-room conversation
+- Realtime message broadcast over Socket.IO
+- Message history persisted in Supabase PostgreSQL
+- Online user list and connected-socket count
 - Typing indicators
-- Connection status and reconnect handling
-- Local session persistence through AsyncStorage
-- Responsive Expo web interface with React Native components
+- Connection status and Socket.IO reconnection
+- Local session persistence via AsyncStorage
+- Expo web build and native Expo development workflow
 - REST endpoints for health, login, users, and messages
+
+## Architecture
+
+~~~mermaid
+flowchart LR
+    CLIENT["Expo / React Native client<br/>Web, iOS, Android"] --> REST["REST API<br/>Express"]
+    CLIENT <--> SOCKET["Socket.IO"]
+    REST --> DB["Supabase PostgreSQL"]
+    SOCKET --> HANDLERS["Socket handlers"]
+    HANDLERS --> DB
+    DB --> USERS["chat_users"]
+    DB --> MESSAGES["chat_messages"]
+    CLIENT --> STORAGE["AsyncStorage<br/>local session"]
+~~~
+
+### Request and realtime flow
+
+1. The client posts a username to `POST /api/users/login`.
+2. The backend finds or creates the corresponding row in `chat_users`.
+3. The client loads message history from `GET /api/messages`.
+4. Socket.IO connects and the client emits `user:join` with its user ID and username.
+5. A message is emitted as `message:send`; the backend persists it before broadcasting `message:new`.
+6. Presence and typing changes are broadcast to connected clients.
+
+The server keeps the per-socket identity map in process memory. User and message records are stored in Supabase. This design assumes one backend instance; horizontal scaling needs shared socket/presence infrastructure.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component responsibilities, contracts, and operational notes.
 
 ## Technology stack
 
-| Area               | Technology                                         |
-| ------------------ | -------------------------------------------------- |
-| Client             | React Native, Expo SDK 54, Expo Router, TypeScript |
-| UI                 | Inter font, Lucide icons, centralized theme tokens |
-| Realtime transport | Socket.IO client/server                            |
-| API                | Node.js 22, Express                                |
-| Database           | Supabase PostgreSQL                                |
-| Web hosting        | Vercel static deployment                           |
-| API hosting        | Render web service                                 |
-
-## Repository layout
-
-```text
-app/                 Expo Router routes and application entry points
-components/          Chat UI, messages, avatars, indicators, and status badges
-screens/             Login screen
-hooks/               Chat, typing, and Expo lifecycle hooks
-lib/                 API client, Socket.IO client, formatting, and theme
-types/               Shared TypeScript domain types
-server/src/          Express and Socket.IO backend
-server/src/config/   Runtime and Supabase configuration
-server/src/controllers/  User and message operations
-server/src/socket/   Realtime event handlers
-supabase/migrations/ Database schema and row-level security policies
-assets/              Application icons and web favicon
-```
+| Layer | Technology |
+| --- | --- |
+| Mobile/web client | Expo SDK 54, React Native 0.81, React 19 |
+| Navigation | Expo Router 6 |
+| Language | TypeScript 5.9 |
+| UI | React Native components, Inter, Lucide |
+| HTTP API | Node.js 22, Express 4 |
+| Realtime | Socket.IO 4 |
+| Persistence | Supabase PostgreSQL |
+| Web hosting | Vercel static output |
+| API hosting | Render web service |
 
 ## Prerequisites
 
-- Node.js 22.x
+- Node.js 22.x (the backend declares Node 22 in `server/package.json`)
 - npm
-- A Supabase project
-- An Expo account for EAS Hosting, if deploying the frontend through EAS
-- A Render account, if deploying the backend through Render
+- A Supabase project with permission to run SQL migrations
+- Git
+- Optional: Expo Go or an emulator for native testing
 
-Node 22 is required by the backend runtime configuration. Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`.
+Check versions:
 
-## Local development
+~~~bash
+node --version
+npm --version
+~~~
 
-### 1. Configure Supabase
+## Local setup
 
-Create a Supabase project and run the SQL in:
+### 1. Create the database schema
 
-```text
-supabase/migrations/20260721085927_create_chat_tables.sql.sql
-```
+Open the Supabase SQL Editor for the project you will use locally and execute:
 
-The migration creates the following public tables:
+`supabase/migrations/20260721085927_create_chat_tables.sql.sql`
 
-- `chat_users`
-- `chat_messages`
+It creates `chat_users` and `chat_messages`, including the message timestamp index and row-level security policies.
 
-Confirm the tables exist in the same Supabase project referenced by `SUPABASE_URL`.
+**Security note:** the migration intentionally allows anonymous and authenticated access to the shared demo tables. That matches the username-only, single-room demo design; it is not an appropriate access policy for private conversations or production user data.
 
-### 2. Start the backend
-
-```powershell
-cd server
-npm.cmd ci
-```
-
-Create `server/.env`:
-
-```env
-PORT=3001
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVER_ONLY_SERVICE_ROLE_KEY
-CLIENT_ORIGINS=http://localhost:8081,http://localhost:3000
-```
-
-Start the service:
-
-```powershell
-npm.cmd start
-```
-
-Verify the backend:
-
-```text
-http://localhost:3001/api/health
-```
-
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
-### 3. Start the Expo frontend
+### 2. Configure and start the backend
 
 From the repository root:
 
-```powershell
-npm.cmd ci
-```
+~~~bash
+cd server
+npm ci
+~~~
 
-Create or update the root `.env`:
+Copy `server/.env.example` to `server/.env` and set the values:
 
-```env
+~~~env
+PORT=3001
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVER_ONLY_SERVICE_ROLE_KEY
+CLIENT_ORIGINS=http://localhost:8081,http://localhost:8082,http://localhost:19006,http://localhost:3000
+~~~
+
+Start the service:
+
+~~~bash
+npm start
+~~~
+
+For development with file watching:
+
+~~~bash
+npm run dev
+~~~
+
+Verify it in a browser or terminal:
+
+~~~text
+http://localhost:3001/api/health
+~~~
+
+Expected response:
+
+~~~json
+{"status":"ok"}
+~~~
+
+Run the included health smoke test from `server/`:
+
+~~~bash
+npm run test:smoke
+~~~
+
+The health check validates the HTTP process only. To validate persistence, use a configured Supabase project and test login and message history through the app.
+
+### 3. Configure and start the Expo client
+
+Open a second terminal at the repository root:
+
+~~~bash
+npm ci
+~~~
+
+Create a root `.env` file:
+
+~~~env
 EXPO_PUBLIC_API_BASE=http://localhost:3001
-```
+~~~
 
 Start Expo:
 
-```powershell
-npm.cmd run dev
-```
+~~~bash
+npm run dev
+~~~
 
-For the web target:
+To test the web target:
 
-```powershell
-npm.cmd run dev -- --web
-```
+~~~bash
+npm run dev -- --web
+~~~
 
-For a physical device, replace `localhost` with the backend machine's LAN IP and allow the corresponding frontend origin in `CLIENT_ORIGINS`.
+For a physical device, set `EXPO_PUBLIC_API_BASE` to the computer's LAN IP and port (for example, `http://192.168.1.20:3001`). Add the browser origin to `CLIENT_ORIGINS` when testing through a web browser. The phone and development computer must be able to reach one another over the network.
+
+### Windows PowerShell
+
+Use `npm.cmd` when PowerShell execution policy blocks the `npm.ps1` shim. For example, use `npm.cmd ci`, `npm.cmd start`, and `npm.cmd run dev`.
 
 ## Environment variables
 
-### Frontend
+| Variable | Location | Required | Purpose |
+| --- | --- | --- | --- |
+| `EXPO_PUBLIC_API_BASE` | Repository root `.env` | Recommended | Backend base URL used by the Expo client |
+| `PORT` | `server/.env` | No | HTTP/Socket.IO listening port; defaults to 3001 |
+| `SUPABASE_URL` | `server/.env` | Yes | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | `server/.env` | Yes | Server-only Supabase credential |
+| `CLIENT_ORIGINS` | `server/.env` | Set explicitly | Comma-separated allowed web origins |
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `EXPO_PUBLIC_API_BASE` | Yes | Public URL of the deployed backend |
-
-`EXPO_PUBLIC_*` values are embedded into the web bundle at build time. Never place Supabase service-role credentials in the frontend or in Vercel's public runtime configuration.
-
-### Backend
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `PORT` | Render-provided | HTTP and Socket.IO listening port |
-| `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only Supabase credential |
-| `CLIENT_ORIGINS` | Yes in production | Comma-separated allowed browser origins |
-
-For the current Vercel deployment, `CLIENT_ORIGINS` must include:
-
-```text
-https://realtimechatapp-alpha-ten.vercel.app
-```
+Never put `SUPABASE_SERVICE_ROLE_KEY` in an `EXPO_PUBLIC_*` variable, the client bundle, a screenshot, or a committed environment file. The service-role key bypasses row-level security.
 
 ## HTTP API
 
-Base URL: `http://localhost:3001` locally or the Render service URL in production.
+Local base URL: `http://localhost:3001`.
 
-| Method | Endpoint | Purpose |
+| Method | Endpoint | Success response |
 | --- | --- | --- |
-| `GET` | `/api/health` | Service health check |
-| `POST` | `/api/users/login` | Create or retrieve a username-based demo user |
-| `GET` | `/api/users` | List users and presence state |
-| `GET` | `/api/messages?limit=100` | Read message history |
-| `POST` | `/api/messages` | Persist a message through REST |
+| GET | `/api/health` | `{"status":"ok"}` |
+| POST | `/api/users/login` | `{"user": User}` |
+| GET | `/api/users` | `{"users": User[]}` |
+| GET | `/api/messages?limit=100` | `{"messages": Message[]}` |
+| POST | `/api/messages` | `{"message": Message}` |
 
-Login request example:
+The history endpoint accepts a `limit` from 1 to 500; invalid values fall back to 100.
 
-```json
-{
-  "username": "alice"
-}
-```
+Example login request:
+
+~~~bash
+curl -X POST http://localhost:3001/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice"}'
+~~~
 
 ## Socket.IO events
 
-### Client to server
-
-| Event | Payload | Purpose |
+| Direction | Event | Payload |
 | --- | --- | --- |
-| `user:join` | `{ userId, username }` | Register the connected user |
-| `message:send` | `{ text }` | Persist and broadcast a message |
-| `typing:start` | none | Notify other users that typing started |
-| `typing:stop` | none | Notify other users that typing stopped |
+| Client → server | `user:join` | `{ userId, username }` |
+| Client → server | `message:send` | `{ text }` |
+| Client → server | `typing:start` | none |
+| Client → server | `typing:stop` | none |
+| Server → client | `message:new` | `Message` |
+| Server → client | `presence` | `{ online }` |
+| Server → client | `users:online` | `{ users }` |
+| Server → client | `typing:start` | `{ username }` |
+| Server → client | `typing:stop` | `{ username }` |
 
-### Server to client
+## Test and validation instructions
 
-| Event | Payload | Purpose |
-| --- | --- | --- |
-| `message:new` | `Message` | New persisted message |
-| `presence` | `{ online }` | Connected socket count |
-| `users:online` | `{ users }` | Current online usernames |
-| `typing:start` | `{ username }` | Another user started typing |
-| `typing:stop` | `{ username }` | Another user stopped typing |
+Run these commands after installing dependencies.
+
+**Client (repository root):**
+
+~~~bash
+npm run typecheck
+npm run lint
+npm run build:web
+~~~
+
+**Backend (from `server/`, with environment variables configured and the service running):**
+
+~~~bash
+npm run test:smoke
+~~~
+
+The smoke test sends one HTTP request to `/api/health` and checks for `{"status":"ok"}`. It does not exercise Supabase writes or realtime messaging.
+
+**Manual end-to-end check:**
+
+1. Open the web app in two separate browser profiles or one normal and one private window.
+2. Sign in with two different usernames.
+3. Confirm both clients show a connected state and presence count.
+4. Send a message from one client and verify it appears in the other.
+5. Reload one client and verify the message is still present in history.
+6. Trigger the typing indicator and verify it is visible on the other client.
+
+There is no automated Socket.IO/Supabase integration-test suite in this repository yet. Do not describe the manual flow or health check as proof of full end-to-end test coverage.
 
 ## Deployment
 
 ### Backend on Render
 
-Create a Render Web Service connected to the repository with:
+Create a Web Service linked to this repository:
 
-| Render setting | Value |
+| Setting | Value |
 | --- | --- |
-| Root Directory | `server` |
-| Build Command | `npm ci` |
-| Start Command | `npm start` |
-| Node.js | `22.x` |
-| Health Check Path | `/api/health` |
+| Root directory | `server` |
+| Runtime | Node.js 22 |
+| Build command | `npm ci` |
+| Start command | `npm start` |
+| Health check path | `/api/health` |
 
-Add the backend environment variables listed above. Render automatically provides the service `PORT`; the application reads it from the environment.
-
-Render supports Socket.IO/WebSocket connections on web services. The current backend uses one process and in-memory presence state. If the service is scaled horizontally, a shared Socket.IO adapter and shared presence store will be required.
+Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CLIENT_ORIGINS` in the Render service environment. Render supplies `PORT`.
 
 ### Frontend on Vercel
 
-The Expo web output is configured as static in `app.json`:
+Configure the Vercel project:
 
-```json
-{
-  "expo": {
-    "web": {
-      "bundler": "metro",
-      "output": "static"
-    }
-  }
-}
-```
-
-Configure the project with:
-
-| Vercel setting | Value |
+| Setting | Value |
 | --- | --- |
-| Framework | Other / Expo static output |
-| Build Command | `npm run build:web` |
-| Output Directory | `dist` |
-| Environment Variable | `EXPO_PUBLIC_API_BASE=https://YOUR_RENDER_SERVICE.onrender.com` |
+| Framework preset | Other / Expo static output |
+| Build command | `npm run build:web` |
+| Output directory | `dist` |
+| Environment variable | `EXPO_PUBLIC_API_BASE=https://YOUR_RENDER_SERVICE.onrender.com` |
 
-Deploy using the Vercel dashboard or CLI. Rebuild after changing `EXPO_PUBLIC_API_BASE`.
+The client uses Expo's static web output as configured in `app.json`. Rebuild the frontend after changing `EXPO_PUBLIC_API_BASE`.
 
-### Frontend on EAS Hosting
+## Screenshots
 
-Alternatively:
+The repository includes app icons but not verified screenshots captured from a running product session. Follow [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) to capture the login, conversation, presence, and typing states from the live or local application.
 
-```powershell
-npx eas-cli@latest login
-npx eas-cli@latest init
-npx eas-cli@latest deploy --prod
-```
+## Security and known limitations
 
-## Validation commands
-
-From the repository root:
-
-```powershell
-npm.cmd run typecheck
-npm.cmd run build:web
-```
-
-From `server/`:
-
-```powershell
-npm.cmd ci
-npm.cmd start
-```
-
-The backend should respond with `{"status":"ok"}` at `/api/health` before testing the frontend.
-
-## Current integration notes
-
-The repository and hosted services are actively being aligned with the Supabase schema. Before treating the public deployment as production-ready, verify the following:
-
-- The `chat_users` and `chat_messages` tables have been applied to the Supabase project used by Render.
-- Backend and frontend response envelopes use the same field names (`messages` and `users`).
-- Socket.IO message persistence uses `chat_messages` consistently.
-- Render `CLIENT_ORIGINS` includes the exact Vercel production origin.
-- Server-only Supabase credentials are stored only in Render.
-
-## Security and operational scope
-
-This project uses username-only demo identity and has no password authentication, account verification, authorization model, rate limiting, moderation, or message encryption. Do not use it for confidential or regulated communications without adding those controls.
-
-The Supabase service-role key bypasses row-level security and must remain server-side. Rotate it immediately if it is exposed or committed.
+- Username-only demo identity is not authentication. A visitor can claim another person's display name.
+- The app is one shared room; there are no private conversations or room-level permissions.
+- The included Supabase migration grants broad anonymous access to demo tables. Do not store private or regulated messages in this database configuration.
+- The backend uses a Supabase service-role key and must keep it server-side.
+- No account verification, password authentication, authorization model, rate limiting, abuse reporting/moderation, end-to-end encryption, or secure attachment handling is implemented.
+- Presence and per-socket identity state are not backed by a shared store; multi-instance deployment requires additional infrastructure.
+- The health endpoint does not prove that Supabase is reachable or correctly migrated.
 
 ## Contributing
 
 1. Create a feature branch from `main`.
-2. Make a focused change.
-3. Run the typecheck and web build.
-4. Review the diff and update documentation when behavior or deployment changes.
-5. Open a pull request with a concise description and validation notes.
+2. Make a focused change and add/update tests or validation notes.
+3. Run the client checks and backend smoke test where applicable.
+4. Update the architecture or setup docs when behavior changes.
+5. Open a pull request with a summary and exact validation results.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT. See [LICENSE](LICENSE).
