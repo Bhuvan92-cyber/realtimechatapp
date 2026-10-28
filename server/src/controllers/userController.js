@@ -36,7 +36,7 @@ function rowToUser(row) {
   };
 }
 
-// POST /api/chat_users/login
+// POST /api/users/login
 // Body: { username }
 export async function login(req, res) {
   const username = (req.body?.username ?? '').trim();
@@ -96,7 +96,7 @@ export async function login(req, res) {
   }
 }
 
-// GET /api/chat_users
+// GET /api/users
 export async function listUsers(_req, res) {
   try {
     const { data, error } = await db
@@ -109,7 +109,7 @@ export async function listUsers(_req, res) {
     }
 
     return res.status(200).json({
-      chat_users: (data ?? []).map(rowToUser),
+      users: (data ?? []).map(rowToUser),
     });
   } catch (err) {
     console.error(
@@ -118,7 +118,7 @@ export async function listUsers(_req, res) {
     );
 
     return res.status(500).json({
-      error: 'Failed to fetch chat_users',
+      error: 'Failed to fetch users',
     });
   }
 }
