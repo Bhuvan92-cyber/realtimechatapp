@@ -11,22 +11,26 @@ function rowToMessage(row) {
   };
 }
 
-// GET /api/chat_messages?limit=100
+// GET /api/messages?limit=100
 export async function getMessages(req, res) {
   try {
+    const requestedLimit = Number.parseInt(req.query.limit ?? '100', 10);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 500)
+      : 100;
+
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(limit);
 
     if (error) {
       throw error;
     }
 
-    // IMPORTANT:
-    // Frontend expects { chat_messages: [...] }
     return res.json({
-      chat_messages: data.map(rowToMessage),
+      messages: (data ?? []).map(rowToMessage),
     });
   } catch (error) {
     console.error('Failed to fetch chat_messages:', error);
@@ -37,7 +41,7 @@ export async function getMessages(req, res) {
   }
 }
 
-// POST /api/chat_messages
+// POST /api/messages
 export async function postMessage(req, res) {
   const { userId, username, text } = req.body ?? {};
 
